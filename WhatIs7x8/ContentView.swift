@@ -38,11 +38,11 @@ enum Operation {
             case .easy:
                 return 5
             case .medium:
-                return 10
+                return 8
             case .hard:
-                return 20
+                return 12
             case .expert:
-                return 50
+                return 20
             }
         case .add:
             switch (level) {
@@ -72,11 +72,11 @@ enum Operation {
     func maxAnswer(number: Int, level: Level) -> Int {
         switch (self) {
         case .mul:
-            return maxNumber(level: level) * number * 2
+            return Int(Double(maxNumber(level: level) * number) * 1.2)
         case .div:
-            return maxNumber(level: level) * 2
+            return Int(Double(maxNumber(level: level)) * 1.2)
         case .add:
-            return (maxNumber(level: level) + number) * 2
+            return Int(Double(maxNumber(level: level) + number) * 1.2)
         case .sub:
             return maxNumber(level: level) + number
         }
@@ -169,29 +169,30 @@ struct Question {
     
     init(operation: Operation, level: Level, no1: Int, no2: Int) {
         var answer: Int
+        print("Operation \(operation)")
         switch operation {
         case .mul:
             question = String("\(no1) x \(no2)")
             answer = no1 * no2
-            generateMulAnswers(answer: answer, maxResult: Operation.mul.maxAnswer(number: no1, level: level))
+            generateAnswers(answer: answer, maxResult: Operation.mul.maxAnswer(number: no1, level: level))
         case .div:
             question = String("\(no2*no1) / \(no1)")
             answer = no2
-            //
+            generateAnswers(answer: answer, maxResult: Operation.div.maxAnswer(number: no1, level: level))
         case .add:
             if no2 > no1 { question = String("\(no2) + \(no1)") }
             else { question = String("\(no1) + \(no2)") }
             answer = no1 + no2
-            //
+            generateAnswers(answer: answer, maxResult: Operation.add.maxAnswer(number: no1, level: level))
         case .sub:
             if no2 > no1 {
-                question = String("\(no1) - \(no2)")
+                question = String("\(no2) - \(no1)")
                 answer = no2 - no1
             } else {
                 question = String("\(no1) - \(no2)")
                 answer = no1 - no2
             }
-            //
+            generateAnswers(answer: answer, maxResult: Operation.sub.maxAnswer(number: no1, level: level))
         }
         answers.shuffle()
         for k in 0..<4 {
@@ -204,7 +205,7 @@ struct Question {
         }
     }
     
-    mutating func generateMulAnswers(answer: Int, maxResult: Int) {
+    mutating func generateAnswers(answer: Int, maxResult: Int) {
         answers.append(answer)
         var randomAnswer: Int
         for _ in 1...3 {
@@ -225,53 +226,52 @@ struct Questions {
         self.noQuestions = noQuestions
         self.eduNumber = eduNumber
         let operators = Operators(mul: mul, div: div, add: add, sub: sub, noOfQuestions: noQuestions)
-        
-        if mul { generateMulQnA(eduNumber: eduNumber, level: level, noQuestions: operators.mulQuestions) }
-        if div { generateDivQnA(eduNumber: eduNumber, level: level, noQuestions: operators.divQuestions) }
-        if add { generateAddQnA(eduNumber: eduNumber, level: level, noQuestions: operators.addQuestions) }
-        if sub { generateSubQnA(eduNumber: eduNumber, level: level, noQuestions: operators.subQuestions) }
+
+        if mul { generateQnA(eduNumber: eduNumber, operation: .mul, level: level, noQuestions: operators.mulQuestions) }
+        if div { generateQnA(eduNumber: eduNumber, operation: .div, level: level, noQuestions: operators.divQuestions) }
+        if add { generateQnA(eduNumber: eduNumber, operation: .add, level: level, noQuestions: operators.addQuestions) }
+        if sub { generateQnA(eduNumber: eduNumber, operation: .sub, level: level, noQuestions: operators.subQuestions) }
         
         questions.shuffle()
     }
 
-    mutating func generateMulQnA(eduNumber: Int, level: Level, noQuestions: Int) {
-        let maxFactor = Operation.mul.maxNumber(level: level)
-        print("maxFactor: \(maxFactor)")
+    mutating func generateQnA(eduNumber: Int, operation: Operation, level: Level, noQuestions: Int) {
+        var maxFactor = 0
+        switch (operation) {
+        case .mul:
+            maxFactor = Operation.mul.maxNumber(level: level)
+        case .div:
+            maxFactor = Operation.div.maxNumber(level: level)
+        case .add:
+            maxFactor = Operation.add.maxNumber(level: level)
+        case .sub:
+            maxFactor = Operation.sub.maxNumber(level: level)
+        }
+
         if noQuestions == 0 {
             for i in 0...maxFactor {
-                questions.append(Question(operation: Operation.mul, level: level, no1: eduNumber, no2: i))
+                questions.append(Question(operation: operation, level: level, no1: eduNumber, no2: i))
             }
         } else {
             if noQuestions > maxFactor {
                 for i in 0..<noQuestions {
                     if i <= maxFactor {
-                        questions.append(Question(operation: Operation.mul, level: level, no1: eduNumber, no2: i))
+                        questions.append(Question(operation: operation, level: level, no1: eduNumber, no2: i))
                     } else {
-                        questions.append(Question(operation: Operation.mul, level: level, no1: eduNumber, no2: Int.random(in: 0...maxFactor)))
+                        questions.append(Question(operation: operation, level: level, no1: eduNumber, no2: Int.random(in: 0...maxFactor)))
                     }
                 }
             } else {
-                for i in 0...maxFactor {
-                    questions.append(Question(operation: Operation.mul, level: level, no1: eduNumber, no2: i))
-                }
-                var j = maxFactor
-                while j >= noQuestions {
-                    questions.remove(at: Int.random(in: 0...j))
-                    j -= 1
+                var q: Question
+                for _ in 0..<noQuestions {
+                    repeat {
+                        q = Question(operation: operation, level: level, no1: eduNumber, no2: Int.random(in: 0...maxFactor))
+                    } while questions.contains { $0.question == q.question }
+                    questions.append(q)
                 }
             }
         }
     }
-
-    func generateDivQnA(eduNumber: Int, level: Level, noQuestions: Int) {
-    }
-
-    func generateAddQnA(eduNumber: Int, level: Level, noQuestions: Int) {
-    }
-
-    func generateSubQnA(eduNumber: Int, level: Level, noQuestions: Int) {
-    }
-
 }
 
 struct ContentView: View {
@@ -280,7 +280,7 @@ struct ContentView: View {
     @State private var score = 0
     
     var body: some View {
-        let questions = Questions(eduNumber: 8, mul: true, div: false, add: false, sub: false, level: .hard, noQuestions: 6)
+        let questions = Questions(eduNumber: 8, mul: true, div: true, add: true, sub: true, level: .hard, noQuestions: 6)
 
         Group {
             if userInputScreen {
@@ -307,7 +307,10 @@ struct ContentView: View {
                             }
                         
                         ForEach(0..<4) { i in
-                            Button(action: { print("Trykket på \(i)")}) {
+                            Button(action: {
+                                    print("Trykket på \(i)")
+                                    activeQuestionNo += 1
+                            }) {
                                 Text("\(questions.questions[activeQuestionNo].answers[i])")
                             }
                         }
