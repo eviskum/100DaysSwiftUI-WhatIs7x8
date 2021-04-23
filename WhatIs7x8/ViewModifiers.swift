@@ -10,7 +10,7 @@ import SwiftUI
 struct QuestionModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .frame(width: 171, height: 30)
+            .frame(width: 170, height: 30)
             .font(.largeTitle)
             .padding(30)
             .background(Color.red)
